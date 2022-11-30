@@ -24,8 +24,12 @@ const Board = () => {
     const [botCountry, setBotCountry] = useState<newCountry>({name: '', flag: '', population: 0})
     const [botPopulation, setBotPopulation] = useState<number>(0)
     const [shuffledCountries, setShuffledCountries] = useState<newCountry[]>([])
-    const [botIndex, setBotIndex] = useState<number>(1)
+    const [botIndex, setBotIndex] = useState<number>(2)
     const [playerLost, setPlayerLost] = useState<boolean>(false)
+    const [lostBotPop, setLostBotPop] = useState<number>(0)
+    const [lostPlayerPop, setLostPlayerPop] = useState<number>(0)
+    const [addBotPop, setAddBotPop] = useState<number>(0)
+    const [addPlayerPop, setAddPlayerPop] = useState<number>(0)
  
     const grabCountries = async () => {
         const countries = await fetch('https://api.sampleapis.com/countries/countries')
@@ -55,20 +59,30 @@ const Board = () => {
         setBotPopulation(randomCountries[1].population)
         setGameStarted(true)
         setPlayerLost(false)
+        setBotIndex(2)
+        setAddBotPop(0)
+        setAddPlayerPop(0)
+        setLostBotPop(0)
+        setLostPlayerPop(0)
     }
 
     const gameStop = async () => {
         setGameStarted(false)
+        setPlayerLost(false)
         setPlayerCountry({name: '', flag: '', population: 0})
         setPlayerPopulation(0)
         setBotCountry({name: '', flag: '', population: 0})
         setBotPopulation(0)
+        setAddBotPop(0)
+        setAddPlayerPop(0)
+        setLostBotPop(0)
+        setLostPlayerPop(0)
     }
 
     const botDefeated = async () => {
-        setPlayerPopulation(playerCountry.population + botPopulation)
-        setBotIndex(botIndex + 1)
+        setPlayerPopulation(playerCountry.population + playerPopulation)
         setBotCountry(shuffledCountries[botIndex])
+        setBotIndex(botIndex + 1)
         setBotPopulation(botCountry.population)
     }
 
@@ -94,21 +108,29 @@ const Board = () => {
         if (botChoice == 'attack' && selection == 'attack') {
             const botDeduction = Number((Math.random() * (botPopulation * Math.random())).toFixed(0))
             const playerDeduction = Number((Math.random() * (playerPopulation * Math.random())).toFixed(0))
+            setLostBotPop(lostBotPop + botDeduction)
+            setLostPlayerPop(lostPlayerPop + playerDeduction)
             setBotPopulation(botPopulation - botDeduction)
             setPlayerPopulation(playerPopulation - playerDeduction)
         } else if (botChoice == 'defend' && selection == 'defend') {
             const botAddition = Number((Math.random() * (botPopulation * 0.20)).toFixed(0))
             const playerAddition = Number((Math.random() * (playerPopulation * 0.10)).toFixed(0))
+            setAddBotPop(addBotPop + botAddition)
+            setAddPlayerPop(addPlayerPop + playerAddition)
             setBotPopulation(botPopulation + botAddition)
             setPlayerPopulation(playerPopulation + playerAddition)
         } else if (botChoice == 'attack' && selection == 'defend') {
             const botDeduction = Number((Math.random() * (botPopulation * 0.10)).toFixed(0))
             const playerDeduction = Number((Math.random() * (playerPopulation * 0.20)).toFixed(0))
+            setLostBotPop(lostBotPop + botDeduction)
+            setLostPlayerPop(lostPlayerPop + playerDeduction)
             setBotPopulation(botPopulation - botDeduction)
             setPlayerPopulation(playerPopulation - playerDeduction)
         } else {
             const botDeduction = Number((Math.random() * (botPopulation * 0.20)).toFixed(0))
             const playerDeduction = Number((Math.random() * (playerPopulation * 0.10)).toFixed(0))
+            setLostBotPop(lostBotPop + botDeduction)
+            setLostPlayerPop(lostPlayerPop + playerDeduction)
             setBotPopulation(botPopulation - botDeduction)
             setPlayerPopulation(playerPopulation - playerDeduction)
         }
@@ -119,15 +141,26 @@ const Board = () => {
         <div>
             <div className="title">
                 <h1>Player Country</h1>
+                <h1>Bots Defeated: {botIndex - 2}</h1>
                 <h1>Bot Country</h1>
             </div>
             <div className="board">
                 {playerCountry.name != '' ? 
                     <div className="box">
                         <h2>{playerCountry.name}</h2>
-                        <img className="flag" src={playerCountry.flag} alt="Countries Flag"/>
+                        <img className="flag" src={playerCountry.flag ?? 'https://usflags.design/assets/images/glossary-field.svg'} alt="Countries Flag"/>
                         <h3>Population</h3>
                         <h4>{new Intl.NumberFormat().format(playerPopulation)}</h4>
+                        <div className="info">
+                        <div>
+                                <h4>Casualties</h4>
+                                <h5>{new Intl.NumberFormat().format(lostPlayerPop)}</h5>
+                            </div>
+                            <div>
+                                <h4>Population added</h4>
+                                <h5>{new Intl.NumberFormat().format(addPlayerPop)}</h5>
+                            </div>
+                        </div>
                     </div>
                     :
                     <div className="box">
@@ -138,24 +171,33 @@ const Board = () => {
                 {botCountry.name != '' ? 
                     <div className="box">
                         <h2>{botCountry.name}</h2>
-                        <img className="flag" src={botCountry.flag} alt="Countries Flag"/>
+                        <img className="flag" src={botCountry.flag || 'https://usflags.design/assets/images/glossary-field.svg'} alt="Countries Flag"/>
                         <h3>Population</h3>
                         <h4>{new Intl.NumberFormat().format(botPopulation)}</h4>
+                        <div className="info">
+                            <div>
+                                <h4>Casualties</h4>
+                                <h5>{new Intl.NumberFormat().format(lostBotPop)}</h5>
+                            </div>
+                            <div>
+                                <h4>Population added</h4>
+                                <h5>{new Intl.NumberFormat().format(addBotPop)}</h5>
+                            </div>
+                        </div>
                     </div>
                     :
                     <div className="box">
                         <h1>Placeholder</h1>
                     </div>
-                
                 }
             </div>
             {playerLost 
                 ? 
                 <div>
                     <h1>You lost</h1>
-                    <div>
-                        <button onClick={() => gameStart()}>Restart</button>
-                        <button onClick={() => gameStop()}>Reset</button>
+                    <div className="button-spacing">
+                        <button className="button-62" onClick={() => gameStart()}>Restart</button>
+                        <button className="button-62" onClick={() => gameStop()}>Reset</button>
                     </div>
                 </div>
                 :
@@ -164,19 +206,19 @@ const Board = () => {
             {gameStarted 
                 ? 
                 <div>
-                    <div>
-                        <button onClick={() => playerSelection('attack')}>Attack</button>
-                        <button onClick={() => playerSelection('defend')}>Defend</button>
+                    <div className="button-spacing">
+                        <button className="button-62" onClick={() => playerSelection('attack')}>Attack</button>
+                        <button className="button-62" onClick={() => playerSelection('defend')}>Defend</button>
                     </div>
-                    <button onClick={() => gameStop()}>Stop</button>
+                    <button className="button-62" onClick={() => gameStop()}>Stop Game</button>
                 </div>
                 : 
                 <></>
         
             }
-            {!gameStarted 
+            {!gameStarted && !playerLost
                 ? 
-                <h3 onClick={() => gameStart()}>Generate Game</h3>
+                <button className="button-62" onClick={() => gameStart()}>Generate Game</button>
                 :
                 <></>
             }
