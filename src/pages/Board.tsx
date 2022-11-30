@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import '../css/board.css'
 
 interface newCountry {
     name: string,
@@ -16,12 +17,12 @@ interface Country {
 
 
 const Board = () => {
-    const [test, setTest] = useState<newCountry[]>([])
-    const [start, setStart] = useState<number>(0)
+
+    const [gameStarted, setGameStarted] = useState<boolean>(false)
     const [playerCountry, setPlayerCountry] = useState<newCountry>({name: '', flag: '', population: 0})
     const [botCountry, setBotCountry] = useState<newCountry>({name: '', flag: '', population: 0})
  
-    
+    console.log(playerCountry)
     const grabCountries = async () => {
         const countries = await fetch('https://api.sampleapis.com/countries/countries')
         const data = await countries.json()
@@ -29,7 +30,7 @@ const Board = () => {
             return {
                 name: country.name,
                 flag: country.media.flag,
-                population: country.population
+                population: country.population ?? (Math.random() * 2000000).toFixed(0)
             }
         })
         return extractedData
@@ -46,25 +47,36 @@ const Board = () => {
         const randomCountries = await getRandomCountries(allCountries)
         setPlayerCountry(randomCountries[0])
         setBotCountry(randomCountries[1])
+        setGameStarted(true)
     }
     
 
     return (
         <div>
-            <div style={{display: 'flex', justifyContent: 'space-around'}}>
+            <div className="board">
                 <div>
                     <h2>{playerCountry.name}</h2>
-                    <img src={playerCountry.flag} alt="Countries Flag"/>
+                    <img className="flag" src={playerCountry.flag} alt="Countries Flag"/>
                     <h3>Population</h3>
-                    <h4>{playerCountry.population}</h4>
+                    <h4>{new Intl.NumberFormat().format(playerCountry.population)}</h4>
                 </div>
                 <div>
                     <h2>{botCountry.name}</h2>
-                    <img src={botCountry.flag} alt="Countries Flag"/>
+                    <img className="flag" src={botCountry.flag} alt="Countries Flag"/>
                     <h3>Population</h3>
-                    <h4>{botCountry.population}</h4>
+                    <h4>{new Intl.NumberFormat().format(botCountry.population)}</h4>
                 </div>
             </div>
+            {gameStarted ? 
+            <div>
+                <button>Attack</button>
+                <button>Stop</button>
+                <button>Defend</button>
+            </div>
+            : 
+            <></>
+        
+        }
             <h3 onClick={() => gameStart()}>Generate Game</h3>
         </div>
     )
