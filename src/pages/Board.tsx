@@ -20,16 +20,12 @@ const Board = () => {
 
     const [gameStarted, setGameStarted] = useState<boolean>(false)
     const [playerCountry, setPlayerCountry] = useState<newCountry>({name: '', flag: '', population: 0})
-    const [playerPopulation, setPlayerPopulation] = useState<number>(0)
     const [botCountry, setBotCountry] = useState<newCountry>({name: '', flag: '', population: 0})
-    const [botPopulation, setBotPopulation] = useState<number>(0)
     const [shuffledCountries, setShuffledCountries] = useState<newCountry[]>([])
     const [botIndex, setBotIndex] = useState<number>(2)
+    const [choseRight, setChoseRight] = useState<boolean>(false)
     const [playerLost, setPlayerLost] = useState<boolean>(false)
-    const [lostBotPop, setLostBotPop] = useState<number>(0)
-    const [lostPlayerPop, setLostPlayerPop] = useState<number>(0)
-    const [addBotPop, setAddBotPop] = useState<number>(0)
-    const [addPlayerPop, setAddPlayerPop] = useState<number>(0)
+    const [score, setScore] = useState<number>(0)
  
     const grabCountries = async () => {
         const countries = await fetch('https://api.sampleapis.com/countries/countries')
@@ -37,7 +33,7 @@ const Board = () => {
         const extractedData = await data.map((country: Country) => {
             return {
                 name: country.name,
-                flag: country.media.flag,
+                flag: country.media.flag ?? 'https://usflags.design/assets/images/glossary-field.svg',
                 population: country.population ?? (Math.random() * 2000000).toFixed(0)
             }
         })
@@ -54,113 +50,66 @@ const Board = () => {
         const allCountries = await grabCountries()
         const randomCountries = await getRandomCountries(allCountries)
         setPlayerCountry(randomCountries[0])
-        setPlayerPopulation(randomCountries[0].population)
         setBotCountry(randomCountries[1])
-        setBotPopulation(randomCountries[1].population)
         setGameStarted(true)
         setPlayerLost(false)
         setBotIndex(2)
-        setAddBotPop(0)
-        setAddPlayerPop(0)
-        setLostBotPop(0)
-        setLostPlayerPop(0)
+        setScore(0)
+        setChoseRight(false)
     }
 
     const gameStop = async () => {
         setGameStarted(false)
         setPlayerLost(false)
         setPlayerCountry({name: '', flag: '', population: 0})
-        setPlayerPopulation(0)
         setBotCountry({name: '', flag: '', population: 0})
-        setBotPopulation(0)
-        setAddBotPop(0)
-        setAddPlayerPop(0)
-        setLostBotPop(0)
-        setLostPlayerPop(0)
+        setChoseRight(false)
     }
 
-    const botDefeated = async () => {
-        setPlayerPopulation(playerCountry.population + playerPopulation)
+    const check = async (guess: string) => {
+        if (guess == 'higher' && playerCountry.population < botCountry.population) {
+            setChoseRight(true)
+            return
+        } 
+        if (guess == 'lower' && playerCountry.population > botCountry.population) {
+            setChoseRight(true)
+            return
+        }
+        if (guess == 'lower' && playerCountry.population < botCountry.population || guess == 'higher' && playerCountry.population > botCountry.population) {
+            setPlayerLost(true)
+        }
+    }
+
+    const nextCountry = async () => {
+        setScore(score + 1)
+        setChoseRight(false)
+        setPlayerCountry(botCountry)
         setBotCountry(shuffledCountries[botIndex])
         setBotIndex(botIndex + 1)
-        setBotPopulation(botCountry.population)
-    }
-
-    const playerDefeated = async () => {
-        setPlayerLost(true)
-        setGameStarted(false)
-    }
-
-    const botSelection = async () => {
-        const choices = ['attack', 'defend']
-        const randomChoice = choices.sort(() => 0.5 - Math.random())
-        return randomChoice[0]
-    }
-
-    const playerSelection = async (selection: string) => {
-        const botChoice = await botSelection()
-        if (playerCountry.population * 0.10 > playerPopulation) {
-            return playerDefeated()
-        }
-        if (botCountry.population * 0.10 > botPopulation) {
-            return botDefeated()
-        }
-        if (botChoice == 'attack' && selection == 'attack') {
-            const botDeduction = Number((Math.random() * (botPopulation * Math.random())).toFixed(0))
-            const playerDeduction = Number((Math.random() * (playerPopulation * Math.random())).toFixed(0))
-            setLostBotPop(lostBotPop + botDeduction)
-            setLostPlayerPop(lostPlayerPop + playerDeduction)
-            setBotPopulation(botPopulation - botDeduction)
-            setPlayerPopulation(playerPopulation - playerDeduction)
-        } else if (botChoice == 'defend' && selection == 'defend') {
-            const botAddition = Number((Math.random() * (botPopulation * 0.20)).toFixed(0))
-            const playerAddition = Number((Math.random() * (playerPopulation * 0.10)).toFixed(0))
-            setAddBotPop(addBotPop + botAddition)
-            setAddPlayerPop(addPlayerPop + playerAddition)
-            setBotPopulation(botPopulation + botAddition)
-            setPlayerPopulation(playerPopulation + playerAddition)
-        } else if (botChoice == 'attack' && selection == 'defend') {
-            const botDeduction = Number((Math.random() * (botPopulation * 0.10)).toFixed(0))
-            const playerDeduction = Number((Math.random() * (playerPopulation * 0.20)).toFixed(0))
-            setLostBotPop(lostBotPop + botDeduction)
-            setLostPlayerPop(lostPlayerPop + playerDeduction)
-            setBotPopulation(botPopulation - botDeduction)
-            setPlayerPopulation(playerPopulation - playerDeduction)
-        } else {
-            const botDeduction = Number((Math.random() * (botPopulation * 0.20)).toFixed(0))
-            const playerDeduction = Number((Math.random() * (playerPopulation * 0.10)).toFixed(0))
-            setLostBotPop(lostBotPop + botDeduction)
-            setLostPlayerPop(lostPlayerPop + playerDeduction)
-            setBotPopulation(botPopulation - botDeduction)
-            setPlayerPopulation(playerPopulation - playerDeduction)
-        }
     }
     
 
     return (
         <div>
             <div className="title">
-                <h1>Player Country</h1>
-                <h1>Bots Defeated: {botIndex - 2}</h1>
-                <h1>Bot Country</h1>
+                <h1>Guess Population</h1>
+                <h2>Your Score: {score}</h2>
+            </div>
+            <div>
+                {gameStarted 
+                    ? 
+                    <h3>Is {botCountry.name} higher or lower than {playerCountry.name}</h3>
+                    :
+                    <></>
+                }
             </div>
             <div className="board">
                 {playerCountry.name != '' ? 
                     <div className="box">
                         <h2>{playerCountry.name}</h2>
-                        <img className="flag" src={playerCountry.flag ?? 'https://usflags.design/assets/images/glossary-field.svg'} alt="Countries Flag"/>
+                        <img className="flag" src={playerCountry.flag} alt="Countries Flag"/>
                         <h3>Population</h3>
-                        <h4>{new Intl.NumberFormat().format(playerPopulation)}</h4>
-                        <div className="info">
-                        <div>
-                                <h4>Casualties</h4>
-                                <h5>{new Intl.NumberFormat().format(lostPlayerPop)}</h5>
-                            </div>
-                            <div>
-                                <h4>Population added</h4>
-                                <h5>{new Intl.NumberFormat().format(addPlayerPop)}</h5>
-                            </div>
-                        </div>
+                        <h4>{new Intl.NumberFormat().format(playerCountry.population)}</h4>
                     </div>
                     :
                     <div className="box">
@@ -168,22 +117,31 @@ const Board = () => {
                     </div>
                 
                 }
+                {gameStarted 
+                    ? 
+                    <div>
+                        <div>
+                            <button className="button-62" onClick={() => check('higher')}>Higher</button>
+                        </div>
+                        <div style={{marginTop: '50px'}}>
+                            <button className="button-62" onClick={() => check('lower')}>Lower</button>
+                        </div>
+                    </div>
+                
+                    :
+                    <></>
+                }
                 {botCountry.name != '' ? 
                     <div className="box">
                         <h2>{botCountry.name}</h2>
-                        <img className="flag" src={botCountry.flag || 'https://usflags.design/assets/images/glossary-field.svg'} alt="Countries Flag"/>
+                        <img className="flag" src={botCountry.flag} alt="Countries Flag"/>
                         <h3>Population</h3>
-                        <h4>{new Intl.NumberFormat().format(botPopulation)}</h4>
-                        <div className="info">
-                            <div>
-                                <h4>Casualties</h4>
-                                <h5>{new Intl.NumberFormat().format(lostBotPop)}</h5>
-                            </div>
-                            <div>
-                                <h4>Population added</h4>
-                                <h5>{new Intl.NumberFormat().format(addBotPop)}</h5>
-                            </div>
-                        </div>
+                        {choseRight || playerLost
+                            ?
+                            <h4>{new Intl.NumberFormat().format(botCountry.population)}</h4>    
+                            :
+                            <h4>=========</h4>
+                        }
                     </div>
                     :
                     <div className="box">
@@ -191,6 +149,18 @@ const Board = () => {
                     </div>
                 }
             </div>
+            {choseRight 
+                ?
+                <div>
+                    <h1>You got it</h1>
+                    <div className="button-spacing">
+                        <button className="button-62" onClick={() => gameStop()}>Stop</button>
+                        <button className="button-62" onClick={() => nextCountry()}>Next Country</button>
+                    </div>
+                </div>
+                :
+                <></>
+            }
             {playerLost 
                 ? 
                 <div>
@@ -205,11 +175,7 @@ const Board = () => {
             }
             {gameStarted 
                 ? 
-                <div>
-                    <div className="button-spacing">
-                        <button className="button-62" onClick={() => playerSelection('attack')}>Attack</button>
-                        <button className="button-62" onClick={() => playerSelection('defend')}>Defend</button>
-                    </div>
+                <div style={{marginBottom: '100px'}}>
                     <button className="button-62" onClick={() => gameStop()}>Stop Game</button>
                 </div>
                 : 

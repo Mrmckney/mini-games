@@ -11,7 +11,7 @@ function App() {
     <div style={{height: '100%', width: '100%'}}>
       <Routes>
         <Route path="/" element={ <Home /> } />
-        <Route path="/battle" element={ <Board /> } />
+        <Route path="/population-guesser" element={ <Board /> } />
       </Routes>
     </div>
   )
