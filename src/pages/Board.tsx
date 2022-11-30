@@ -23,6 +23,9 @@ const Board = () => {
     const [playerPopulation, setPlayerPopulation] = useState<number>(0)
     const [botCountry, setBotCountry] = useState<newCountry>({name: '', flag: '', population: 0})
     const [botPopulation, setBotPopulation] = useState<number>(0)
+    const [shuffledCountries, setShuffledCountries] = useState<newCountry[]>([])
+    const [botIndex, setBotIndex] = useState<number>(1)
+    const [playerLost, setPlayerLost] = useState<boolean>(false)
  
     const grabCountries = async () => {
         const countries = await fetch('https://api.sampleapis.com/countries/countries')
@@ -39,7 +42,7 @@ const Board = () => {
 
     const getRandomCountries = async (array: Array<newCountry>) => {
         const shuffled = array.sort(() => 0.5 - Math.random());
-      
+        setShuffledCountries(shuffled)
         return shuffled.slice(0, 2);
       }
 
@@ -51,6 +54,64 @@ const Board = () => {
         setBotCountry(randomCountries[1])
         setBotPopulation(randomCountries[1].population)
         setGameStarted(true)
+        setPlayerLost(false)
+    }
+
+    const gameStop = async () => {
+        setGameStarted(false)
+        setPlayerCountry({name: '', flag: '', population: 0})
+        setPlayerPopulation(0)
+        setBotCountry({name: '', flag: '', population: 0})
+        setBotPopulation(0)
+    }
+
+    const botDefeated = async () => {
+        setPlayerPopulation(playerCountry.population + botPopulation)
+        setBotIndex(botIndex + 1)
+        setBotCountry(shuffledCountries[botIndex])
+        setBotPopulation(botCountry.population)
+    }
+
+    const playerDefeated = async () => {
+        setPlayerLost(true)
+        setGameStarted(false)
+    }
+
+    const botSelection = async () => {
+        const choices = ['attack', 'defend']
+        const randomChoice = choices.sort(() => 0.5 - Math.random())
+        return randomChoice[0]
+    }
+
+    const playerSelection = async (selection: string) => {
+        const botChoice = await botSelection()
+        if (playerCountry.population * 0.10 > playerPopulation) {
+            return playerDefeated()
+        }
+        if (botCountry.population * 0.10 > botPopulation) {
+            return botDefeated()
+        }
+        if (botChoice == 'attack' && selection == 'attack') {
+            const botDeduction = Number((Math.random() * (botPopulation * Math.random())).toFixed(0))
+            const playerDeduction = Number((Math.random() * (playerPopulation * Math.random())).toFixed(0))
+            setBotPopulation(botPopulation - botDeduction)
+            setPlayerPopulation(playerPopulation - playerDeduction)
+        } else if (botChoice == 'defend' && selection == 'defend') {
+            const botAddition = Number((Math.random() * (botPopulation * 0.20)).toFixed(0))
+            const playerAddition = Number((Math.random() * (playerPopulation * 0.10)).toFixed(0))
+            setBotPopulation(botPopulation + botAddition)
+            setPlayerPopulation(playerPopulation + playerAddition)
+        } else if (botChoice == 'attack' && selection == 'defend') {
+            const botDeduction = Number((Math.random() * (botPopulation * 0.10)).toFixed(0))
+            const playerDeduction = Number((Math.random() * (playerPopulation * 0.20)).toFixed(0))
+            setBotPopulation(botPopulation - botDeduction)
+            setPlayerPopulation(playerPopulation - playerDeduction)
+        } else {
+            const botDeduction = Number((Math.random() * (botPopulation * 0.20)).toFixed(0))
+            const playerDeduction = Number((Math.random() * (playerPopulation * 0.10)).toFixed(0))
+            setBotPopulation(botPopulation - botDeduction)
+            setPlayerPopulation(playerPopulation - playerDeduction)
+        }
     }
     
 
@@ -88,14 +149,26 @@ const Board = () => {
                 
                 }
             </div>
+            {playerLost 
+                ? 
+                <div>
+                    <h1>You lost</h1>
+                    <div>
+                        <button onClick={() => gameStart()}>Restart</button>
+                        <button onClick={() => gameStop()}>Reset</button>
+                    </div>
+                </div>
+                :
+                <></>
+            }
             {gameStarted 
                 ? 
                 <div>
                     <div>
-                        <button onClick={() => setBotPopulation(botPopulation - 50000)}>Attack</button>
-                        <button>Defend</button>
+                        <button onClick={() => playerSelection('attack')}>Attack</button>
+                        <button onClick={() => playerSelection('defend')}>Defend</button>
                     </div>
-                    <button onClick={() => setGameStarted(false)}>Stop</button>
+                    <button onClick={() => gameStop()}>Stop</button>
                 </div>
                 : 
                 <></>
